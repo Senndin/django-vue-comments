@@ -110,4 +110,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Поля форми коментаря невеликі (текст — до 5000 символів), тож тіло запиту без файлів
+# обмежуємо 1 МБ: усе більше Django відхилить ще до наших перевірок (R13).
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1 * 1024 * 1024
+# Вкладення важить щонайбільше 5 МБ (A12) — такий файл тримаємо в пам'яті цілком,
+# без тимчасового файлу на диску. Сам ліміт перевіряє `comments/attachments.py`.
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
