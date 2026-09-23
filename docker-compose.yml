@@ -1,0 +1,45 @@
+# Увесь бекенд-стек одним стеком контейнерів (T5).
+# Значення для ${...} Compose бере з файлу .env поруч із цим файлом.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      # Іменований том: дані БД переживають перезбирання контейнера.
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # $$ — екранований $, щоб змінну підставив shell усередині контейнера, а не Compose.
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      # У мережі Compose хост бази — ім'я сервісу; значення з .env тут перекривається.
+      POSTGRES_HOST: db
+    depends_on:
+      # Чекаємо не на «контейнер запущено», а на healthcheck: міграції стартують,
+      # коли PostgreSQL справді готовий приймати з'єднання.
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:
