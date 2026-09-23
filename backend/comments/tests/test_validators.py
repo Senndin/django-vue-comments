@@ -2,12 +2,14 @@
 
 import pytest
 from django.core.exceptions import ValidationError
-from django.core.validators import EmailValidator, URLValidator
+from django.core.validators import EmailValidator
 
 from accounts.models import USERNAME_VALIDATOR
-from comments.validators import MAX_TEXT_LENGTH, validate_comment_text
-
-HOME_PAGE_VALIDATOR = URLValidator(schemes=["http", "https"])
+from comments.validators import (
+    HOME_PAGE_VALIDATOR,
+    MAX_TEXT_LENGTH,
+    validate_comment_text,
+)
 
 
 @pytest.mark.parametrize("user_name", ["Anonym", "Rum8", "a", "A" * 50, "0"])
