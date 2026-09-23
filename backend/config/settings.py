@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "accounts",
+    "comments",
 ]
 
 MIDDLEWARE = [
@@ -104,5 +105,9 @@ USE_TZ = True
 STATIC_URL = "static/"
 # Куди `collectstatic` збирає статику; у production її віддає nginx (етап 16).
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Файли, які завантажують користувачі (R16). У production їх віддає nginx (етап 16).
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
