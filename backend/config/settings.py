@@ -128,6 +128,16 @@ CAPTCHA_TIMEOUT = 5
 CAPTCHA_FONT_SIZE = 36
 CAPTCHA_LETTER_ROTATION = (-20, 20)
 
+# Redis: одна інфраструктура на три задачі — кеш (БД 0), черга Celery (БД 1)
+# і канальний шар WebSocket (БД 2). Зараз використовується лише кеш.
+REDIS_URL = env("REDIS_URL", "redis://localhost:6379")
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"{REDIS_URL}/0",
+    }
+}
+
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     # 25 повідомлень на сторінку (R12).
