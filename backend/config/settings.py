@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "captcha",
+    "rest_framework",
     "accounts",
     "comments",
 ]
@@ -126,5 +127,14 @@ CAPTCHA_TIMEOUT = 5
 # читаються. Більший шрифт і менший нахил лишають шум, але роблять текст розбірливим.
 CAPTCHA_FONT_SIZE = 36
 CAPTCHA_LETTER_ROTATION = (-20, 20)
+
+REST_FRAMEWORK = {
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    # 25 повідомлень на сторінку (R12).
+    "PAGE_SIZE": 25,
+    # Порожній список навмисно: API не користується сесіями, тож і CSRF йому не потрібен.
+    # Аутентифікацію за JWT додамо на етапі 10 (§5.3).
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

@@ -1,11 +1,11 @@
 """Модель коментаря — основна сутність проєкту (R1, R2, R10)."""
 
 from django.conf import settings
-from django.core.validators import URLValidator
 from django.db import models
 
 from accounts.models import USERNAME_VALIDATOR
 from comments.attachments import AttachmentType, attachment_upload_to
+from comments.validators import HOME_PAGE_VALIDATOR
 
 
 class Comment(models.Model):
@@ -49,7 +49,7 @@ class Comment(models.Model):
 
     user_name = models.CharField(max_length=50, validators=[USERNAME_VALIDATOR])
     email = models.EmailField()
-    home_page = models.URLField(blank=True, validators=[URLValidator(schemes=["http", "https"])])
+    home_page = models.URLField(blank=True, validators=[HOME_PAGE_VALIDATOR])
 
     # Готовий безпечний HTML, зібраний санітайзером на етапі 3 (A10).
     text = models.TextField()

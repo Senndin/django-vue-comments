@@ -1,6 +1,11 @@
-"""Валідатори полів коментаря (R9, A14)."""
+"""Валідатори полів коментаря (R7, R9, A14)."""
 
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
+
+# Домашня сторінка — лише http/https: інші схеми (`javascript:`, `data:`) у посиланні
+# виконують код у браузері (R7, R13). Валідатор спільний для моделі й серіалізатора.
+HOME_PAGE_VALIDATOR = URLValidator(schemes=["http", "https"])
 
 # Довжина початкового тексту, до розмітки (A14).
 MAX_TEXT_LENGTH = 5000
