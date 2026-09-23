@@ -5,7 +5,7 @@ from django.core.validators import URLValidator
 from django.db import models
 
 from accounts.models import USERNAME_VALIDATOR
-from comments.attachments import attachment_upload_to
+from comments.attachments import AttachmentType, attachment_upload_to
 
 
 class Comment(models.Model):
@@ -17,11 +17,9 @@ class Comment(models.Model):
     будь-якої глибини одним запитом, без рекурсії та без додаткових бібліотек.
     """
 
-    class AttachmentType(models.TextChoices):
-        """Тип вкладення: або картинка, або текстовий файл (R16, A11)."""
-
-        IMAGE = "image", "Image"
-        TEXT = "text", "Text file"
+    # Тип вкладення живе поруч із перевірками файлів (`attachments.py`), а тут лишається
+    # псевдонім — щоб звичне `Comment.AttachmentType` працювало як раніше.
+    AttachmentType = AttachmentType
 
     parent = models.ForeignKey(
         "self",
