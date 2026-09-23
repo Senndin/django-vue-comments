@@ -1,5 +1,6 @@
 """HTTP-точки входу застосунку коментарів (files/SPEC.md §3.5)."""
 
+from django.core.cache import cache
 from django.db.models import Count, QuerySet
 from django.http import HttpRequest, JsonResponse
 from django.views.decorators.http import require_GET
@@ -9,6 +10,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from comments.cache import LIST_CACHE_TIMEOUT, invalidate_list, page_cache_key
 from comments.captcha import issue_captcha
 from comments.models import Comment
 from comments.serializers import (
@@ -77,11 +79,47 @@ class CommentListCreateView(generics.ListCreateAPIView):
             return CommentCreateSerializer
         return CommentListSerializer
 
+    def list(self, request: Request, *args, **kwargs) -> Response:
+        """Готова сторінка береться з кешу; до БД доходить лише перший запит (T8, A18)."""
+        if not self.requested_page(request).isdigit():
+            # Такий запит однаково завершиться 404, а сміттєвий параметр у ключі кешу
+            # нам не потрібен (у memcached він був би ще й помилкою).
+            return super().list(request, *args, **kwargs)
+
+        cache_key = self.page_cache_key(request)
+        cached_page = cache.get(cache_key)
+        if cached_page is not None:
+            return Response(cached_page)
+
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, response.data, LIST_CACHE_TIMEOUT)
+        return response
+
+    def page_cache_key(self, request: Request) -> str:
+        """
+        Ключ сторінки будується з **нормалізованого** сортування, а не з сирого параметра.
+
+        Інакше довільне значення `ordering` створювало б окремий ключ, і кеш можна було б
+        забити сміттям із тисяч неіснуючих сортувань.
+        """
+        ordering = StableOrderingFilter().get_ordering(request, self.get_queryset(), self) or []
+        return page_cache_key(
+            host=request.get_host(),
+            ordering=",".join(ordering),
+            page=self.requested_page(request),
+        )
+
+    @staticmethod
+    def requested_page(request: Request) -> str:
+        return request.query_params.get("page", "1")
+
     def perform_create(self, serializer: CommentCreateSerializer) -> None:
         serializer.save(
             ip_address=client_ip(self.request),
             user_agent=self.request.META.get("HTTP_USER_AGENT", "")[:USER_AGENT_MAX_LENGTH],
         )
+        # Тимчасово викликаємо напряму: на етапі 8 це робитиме сигнал після коміту (A19).
+        invalidate_list()
 
 
 class CommentThreadView(generics.RetrieveAPIView):
