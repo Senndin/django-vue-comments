@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "captcha",
     "accounts",
     "comments",
 ]
@@ -116,5 +117,14 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 1 * 1024 * 1024
 # Вкладення важить щонайбільше 5 МБ (A12) — такий файл тримаємо в пам'яті цілком,
 # без тимчасового файлу на диску. Сам ліміт перевіряє `comments/attachments.py`.
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+
+# CAPTCHA (R8, A15). Малюнок і сховище — django-simple-captcha, завдання — наше:
+# 6 символів без 0/O та 1/I/L. Час життя ключа — 5 хвилин.
+CAPTCHA_CHALLENGE_FUNCT = "comments.captcha.unambiguous_challenge"
+CAPTCHA_TIMEOUT = 5
+# Типовий розмір шрифту (22) дає картинку 105×29 — шість символів на ній майже не
+# читаються. Більший шрифт і менший нахил лишають шум, але роблять текст розбірливим.
+CAPTCHA_FONT_SIZE = 36
+CAPTCHA_LETTER_ROTATION = (-20, 20)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
