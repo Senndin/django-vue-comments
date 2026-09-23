@@ -167,5 +167,7 @@ def test_captcha_image_is_large_enough_to_read(client: Client) -> None:
     width, height = Image.open(BytesIO(client.get(payload["image_url"]).content)).size
 
     # Типові налаштування бібліотеки дають 105×29 — шість символів там не прочитати.
-    assert width >= 150
+    # Точна ширина залежить від того, які літери випали (вузькі `J` проти широких `W`),
+    # тому межа з запасом: важливо, що картинка не повернулася до крихітного розміру.
+    assert width >= 130
     assert height >= 40
