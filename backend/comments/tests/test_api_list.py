@@ -1,6 +1,7 @@
 """Тести списку заголовних коментарів: пагінація, сортування, кількість запитів (R11–R14)."""
 
 import pytest
+from django.core.cache import cache
 
 from comments.models import Comment
 
@@ -125,6 +126,10 @@ def test_query_count_does_not_grow_with_the_number_of_comments(
     for _ in range(20):
         top = comment_factory()
         comment_factory(parent=top)
+
+    # Коментарі створені напряму в БД, повз API, тож кеш про них не знає — чистимо його
+    # вручну, інакше замість запитів до БД порахували б попадання в кеш (етап 7).
+    cache.clear()
 
     # Стільки ж запитів, скільки й на п'яти рядках: кількість відповідей рахує `annotate`,
     # а не окремий запит на кожен коментар (N+1).

@@ -2,10 +2,20 @@
 
 import pytest
 from captcha.models import CaptchaStore
+from django.core.cache import cache
 from rest_framework.test import APIClient
 
 from comments.captcha import issue_captcha
 from comments.models import Comment
+
+
+@pytest.fixture(autouse=True)
+def local_cache(settings):
+    """Тести не ходять у Redis: кеш у пам'яті, порожній на початку кожного тесту."""
+    settings.CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+    cache.clear()
+    yield
+    cache.clear()
 
 
 @pytest.fixture
