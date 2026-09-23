@@ -1,0 +1,26 @@
+# Локальна документація та нотатки (не потрапляють до репозиторію)
+files/
+
+# Оточення та секрети
+.env
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Django
+media/
+staticfiles/
+*.sqlite3
+
+# Frontend
+node_modules/
+dist/
+
+# IDE та OS
+.idea/
+.vscode/
+.DS_Store

@@ -1,0 +1,17 @@
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+# E/F — pycodestyle і pyflakes, I — порядок імпортів, UP — сучасний синтаксис,
+# B — типові помилки (bugbear), DJ — правила саме для Django.
+select = ["E", "F", "I", "UP", "B", "DJ"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+pythonpath = ["."]
+
+[tool.ruff.lint.per-file-ignores]
+# Міграції генерує Django: довгі рядки — не наш стиль, а формат автогенерації.
+"*/migrations/*" = ["E501"]
