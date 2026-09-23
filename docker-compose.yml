@@ -35,8 +35,9 @@ services:
     build: ./backend
     env_file: .env
     environment:
-      # У мережі Compose хост бази — ім'я сервісу; значення з .env тут перекривається.
+      # У мережі Compose хости беруться з імен сервісів; значення з .env перекриваються.
       POSTGRES_HOST: db
+      REDIS_URL: redis://redis:6379
     depends_on:
       # Чекаємо не на «контейнер запущено», а на healthcheck: міграції стартують,
       # коли PostgreSQL справді готовий приймати з'єднання.
