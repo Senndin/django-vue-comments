@@ -1,6 +1,6 @@
 <script setup>
 /** Головна сторінка: таблиця заголовних коментарів (R11, R12, R14). */
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 
 import CommentTable from '@/components/CommentTable.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
@@ -8,6 +8,19 @@ import { useComments } from '@/composables/useComments.js'
 
 const { comments, total, page, ordering, loading, error, pageCount, load, setOrdering, setPage } =
   useComments()
+
+// Розкрита гілка одна: так сторінка лишається оглядовою, а не перетворюється на стрічку.
+const expandedId = ref(null)
+const replyTo = ref(null)
+
+function toggleThread(commentId) {
+  expandedId.value = expandedId.value === commentId ? null : commentId
+  replyTo.value = null
+}
+
+function startReply(comment) {
+  replyTo.value = comment
+}
 
 onMounted(load)
 </script>
@@ -25,8 +38,20 @@ onMounted(load)
         <button type="button" @click="load">Retry</button>
       </p>
 
+      <p v-if="replyTo" class="message reply-hint">
+        Replying to <strong>{{ replyTo.user_name }}</strong>
+        <button type="button" @click="replyTo = null">Cancel</button>
+      </p>
+
       <div :class="{ loading }">
-        <CommentTable :comments="comments" :ordering="ordering" @update:ordering="setOrdering" />
+        <CommentTable
+          :comments="comments"
+          :ordering="ordering"
+          :expanded-id="expandedId"
+          @update:ordering="setOrdering"
+          @toggle="toggleThread"
+          @reply="startReply"
+        />
       </div>
 
       <PaginationBar :page="page" :page-count="pageCount" @update:page="setPage" />
@@ -62,6 +87,10 @@ onMounted(load)
 .error {
   background: var(--color-error-surface);
   color: var(--color-error);
+}
+
+.reply-hint {
+  background: var(--color-surface);
 }
 
 /* Поки сторінка вантажиться, таблиця лишається на місці — просто тьмянішає. */

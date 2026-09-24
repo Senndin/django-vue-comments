@@ -1,14 +1,16 @@
 <script setup>
 /** Таблиця заголовних коментарів із сортуванням за заголовками (R11, A3). */
+import CommentThread from '@/components/CommentThread.vue'
 import { formatDate } from '@/utils/formatDate.js'
 import { excerpt } from '@/utils/text.js'
 
 const props = defineProps({
   comments: { type: Array, required: true },
   ordering: { type: String, required: true },
+  expandedId: { type: Number, default: null },
 })
 
-const emit = defineEmits(['update:ordering'])
+const emit = defineEmits(['update:ordering', 'toggle', 'reply'])
 
 // Поля, за якими бекенд дозволяє сортувати (білий список у `ordering_fields`).
 const columns = [
@@ -36,6 +38,7 @@ function toggleSort(field) {
     <table class="comments-table">
       <thead>
         <tr>
+          <th scope="col"><span class="visually-hidden">Expand</span></th>
           <th v-for="column in columns" :key="column.field" scope="col">
             <button
               type="button"
@@ -61,16 +64,35 @@ function toggleSort(field) {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="comment in comments" :key="comment.id">
-          <td class="nowrap">{{ comment.user_name }}</td>
-          <td class="nowrap">{{ comment.email }}</td>
-          <td class="nowrap">{{ formatDate(comment.created_at) }}</td>
-          <!-- Фрагмент виводимо як текст: обрізаний HTML міг би зламати розмітку сторінки. -->
-          <td>{{ excerpt(comment.text) }}</td>
-          <td class="numeric">{{ comment.replies_count }}</td>
-        </tr>
+        <template v-for="comment in comments" :key="comment.id">
+          <tr class="comment-row" :class="{ expanded: expandedId === comment.id }">
+            <td>
+              <button
+                type="button"
+                class="toggle"
+                :aria-expanded="expandedId === comment.id"
+                :aria-label="expandedId === comment.id ? 'Collapse thread' : 'Expand thread'"
+                @click="emit('toggle', comment.id)"
+              >
+                {{ expandedId === comment.id ? '▾' : '▸' }}
+              </button>
+            </td>
+            <td class="nowrap">{{ comment.user_name }}</td>
+            <td class="nowrap">{{ comment.email }}</td>
+            <td class="nowrap">{{ formatDate(comment.created_at) }}</td>
+            <!-- Фрагмент виводимо як текст: обрізаний HTML міг би зламати розмітку сторінки. -->
+            <td>{{ excerpt(comment.text) }}</td>
+            <td class="numeric">{{ comment.replies_count }}</td>
+          </tr>
+          <!-- Гілка вантажиться тільки коли рядок розкрито: зайвих запитів немає. -->
+          <tr v-if="expandedId === comment.id" class="thread-row">
+            <td colspan="6">
+              <CommentThread :comment-id="comment.id" @reply="emit('reply', $event)" />
+            </td>
+          </tr>
+        </template>
         <tr v-if="!comments.length">
-          <td class="empty" colspan="5">No comments yet — be the first to write one.</td>
+          <td class="empty" colspan="6">No comments yet — be the first to write one.</td>
         </tr>
       </tbody>
     </table>
@@ -102,8 +124,30 @@ function toggleSort(field) {
   white-space: nowrap;
 }
 
-.comments-table tbody tr:hover {
+.comments-table tbody tr.comment-row:hover {
   background: var(--color-surface);
+}
+
+.comment-row.expanded {
+  background: var(--color-surface);
+}
+
+.thread-row td {
+  padding: 0 0.75rem;
+  background: var(--color-background);
+}
+
+.toggle {
+  padding: 0.1rem 0.45rem;
+  line-height: 1;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
 }
 
 .sort-button {
