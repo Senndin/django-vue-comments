@@ -1,0 +1,67 @@
+/* Базові стилі застосунку: змінні, типографіка, кнопки (R15). */
+
+:root {
+  --color-background: #f7f8fa;
+  --color-surface: #eef0f4;
+  --color-border: #d8dce4;
+  --color-text: #1f2430;
+  --color-text-muted: #6b7280;
+  --color-accent: #2563eb;
+  --color-error: #b42318;
+  --color-error-surface: #fde8e6;
+  --radius: 6px;
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  line-height: 1.5;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+button {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: #fff;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+table {
+  background: #fff;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* Телефони: таблиця гортається вбік, тексту лишається більше місця (адаптивність до 360 px). */
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.4rem;
+  }
+}
