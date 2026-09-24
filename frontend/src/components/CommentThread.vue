@@ -1,12 +1,14 @@
 <script setup>
 /** Гілка обговорення: заголовний коментар і всі відповіді (R10, A4, A5). */
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 
 import { fetchThread } from '@/api/comments.js'
 import CommentItem from '@/components/CommentItem.vue'
 
 const props = defineProps({
   commentId: { type: Number, required: true },
+  // Коментар, що щойно прийшов по WebSocket; гілка сама вирішує, чи він її (A16).
+  liveComment: { type: Object, default: null },
 })
 
 defineEmits(['reply'])
@@ -27,6 +29,31 @@ async function load() {
     loading.value = false
   }
 }
+
+/** Пошук вузла в дереві: гілку ми тримаємо вкладеною, тож обхід рекурсивний. */
+function findNode(node, id) {
+  if (!node || id === null) return null
+  if (node.id === id) return node
+  for (const child of node.children ?? []) {
+    const found = findNode(child, id)
+    if (found) return found
+  }
+  return null
+}
+
+watch(
+  () => props.liveComment,
+  (comment) => {
+    if (!comment || !thread.value) return
+    if (comment.root !== props.commentId) return
+    // Свою ж відповідь ми вже могли додати після відправки — не дублюємо.
+    if (findNode(thread.value, comment.id)) return
+
+    const parent = findNode(thread.value, comment.parent)
+    if (!parent) return
+    parent.children = [...(parent.children ?? []), { ...comment, children: [] }]
+  },
+)
 
 onMounted(load)
 defineExpose({ load })

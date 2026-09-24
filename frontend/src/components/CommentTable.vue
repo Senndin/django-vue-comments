@@ -8,6 +8,7 @@ const props = defineProps({
   comments: { type: Array, required: true },
   ordering: { type: String, required: true },
   expandedId: { type: Number, default: null },
+  liveComment: { type: Object, default: null },
 })
 
 const emit = defineEmits(['update:ordering', 'toggle', 'reply'])
@@ -87,7 +88,11 @@ function toggleSort(field) {
           <!-- Гілка вантажиться тільки коли рядок розкрито: зайвих запитів немає. -->
           <tr v-if="expandedId === comment.id" class="thread-row appear">
             <td colspan="6">
-              <CommentThread :comment-id="comment.id" @reply="emit('reply', $event)" />
+              <CommentThread
+                :comment-id="comment.id"
+                :live-comment="liveComment"
+                @reply="emit('reply', $event)"
+              />
             </td>
           </tr>
         </template>
