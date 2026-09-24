@@ -99,6 +99,15 @@ class CommentCreateSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "attachment_type", "created_at")
 
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request")
+        if request is not None and request.user.is_authenticated:
+            # У того, хто ввійшов, ім'я та e-mail беруться з акаунта (A1): робимо поля
+            # такими, що тільки читаються, — значення із запиту сервер ігнорує повністю.
+            self.fields["user_name"].read_only = True
+            self.fields["email"].read_only = True
+
     def validate_text(self, value: str) -> str:
         """У базу лягає вже зібраний безпечний HTML, а не те, що надіслав клієнт (A10)."""
         return build_text_html(value)
