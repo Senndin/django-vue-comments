@@ -114,10 +114,17 @@ class CommentListCreateView(generics.ListCreateAPIView):
         return request.query_params.get("page", "1")
 
     def perform_create(self, serializer: CommentCreateSerializer) -> None:
-        serializer.save(
-            ip_address=client_ip(self.request),
-            user_agent=self.request.META.get("HTTP_USER_AGENT", "")[:USER_AGENT_MAX_LENGTH],
-        )
+        fields = {
+            "ip_address": client_ip(self.request),
+            "user_agent": self.request.META.get("HTTP_USER_AGENT", "")[:USER_AGENT_MAX_LENGTH],
+        }
+
+        user = self.request.user
+        if user.is_authenticated:
+            # Підпис бере з акаунта, а не з форми (A1); коментар прив'язується до користувача.
+            fields |= {"user": user, "user_name": user.username, "email": user.email}
+
+        serializer.save(**fields)
 
 
 class CommentThreadView(generics.RetrieveAPIView):
