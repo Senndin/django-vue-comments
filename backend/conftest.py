@@ -26,6 +26,12 @@ def local_cache(settings):
     cache.clear()
 
 
+@pytest.fixture(autouse=True)
+def in_memory_channel_layer(settings):
+    """Тести не ходять у Redis: канальний шар живе в пам'яті процесу."""
+    settings.CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+
+
 @pytest.fixture
 def api_client() -> APIClient:
     """Клієнт DRF: вміє надсилати JSON і multipart, розбирає відповіді API."""
