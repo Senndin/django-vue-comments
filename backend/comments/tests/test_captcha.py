@@ -4,6 +4,7 @@ from datetime import timedelta
 from io import BytesIO
 
 import pytest
+from captcha.helpers import captcha_image_url
 from captcha.models import CaptchaStore
 from django.core.exceptions import ValidationError
 from django.test import Client
@@ -162,12 +163,18 @@ def test_captcha_image_is_served(client: Client) -> None:
 
 
 def test_captcha_image_is_large_enough_to_read(client: Client) -> None:
-    payload = client.get("/api/captcha/").json()
+    # Завдання задаємо самі: ширина картинки сильно залежить від того, які літери випали
+    # (`JJJJJJ` — 97 px, `WWWWWW` — 226 px), і на випадковому значенні тест був хитким.
+    # Беремо найвужчий можливий варіант — якщо і він достатньо великий, решта тим паче.
+    store = CaptchaStore.objects.create(
+        challenge="JJJJJJ",
+        response="jjjjjj",
+        expiration=timezone.now() + timedelta(minutes=5),
+    )
 
-    width, height = Image.open(BytesIO(client.get(payload["image_url"]).content)).size
+    width, height = Image.open(BytesIO(client.get(captcha_image_url(store.hashkey)).content)).size
 
-    # Типові налаштування бібліотеки дають 105×29 — шість символів там не прочитати.
-    # Точна ширина залежить від того, які літери випали (вузькі `J` проти широких `W`),
-    # тому межа з запасом: важливо, що картинка не повернулася до крихітного розміру.
-    assert width >= 130
+    # Типові налаштування бібліотеки дають 105×29, де шість символів не прочитати.
+    # Висота залежить лише від розміру шрифту, тож саме вона тут головна перевірка.
     assert height >= 40
+    assert width >= 90
