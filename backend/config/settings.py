@@ -6,6 +6,7 @@
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -47,6 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "captcha",
     "rest_framework",
+    "rest_framework_simplejwt",
     "accounts",
     "comments",
 ]
@@ -171,9 +173,18 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     # 25 повідомлень на сторінку (R12).
     "PAGE_SIZE": 25,
-    # Порожній список навмисно: API не користується сесіями, тож і CSRF йому не потрібен.
-    # Аутентифікацію за JWT додамо на етапі 10 (§5.3).
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    # Лише JWT: сесій API не використовує, тому й CSRF йому не потрібен (§5.3).
+    # Адмінка працює окремо — на сесіях і з CSRF.
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+}
+
+# Час життя токенів (A20): короткий access і довгий refresh — якщо access витік,
+# зловмисник має лише пів години, а користувач не мусить логінитися щодня.
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
