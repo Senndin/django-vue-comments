@@ -65,3 +65,25 @@ table {
     font-size: 1.4rem;
   }
 }
+
+/* Поява розкритої гілки та нових рядків (R24). */
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.appear {
+  animation: appear 0.2s ease;
+}
+
+/* Якщо в системі ввімкнено «менше руху», анімації вимикаються повністю. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

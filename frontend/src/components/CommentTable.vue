@@ -85,7 +85,7 @@ function toggleSort(field) {
             <td class="numeric">{{ comment.replies_count }}</td>
           </tr>
           <!-- Гілка вантажиться тільки коли рядок розкрито: зайвих запитів немає. -->
-          <tr v-if="expandedId === comment.id" class="thread-row">
+          <tr v-if="expandedId === comment.id" class="thread-row appear">
             <td colspan="6">
               <CommentThread :comment-id="comment.id" @reply="emit('reply', $event)" />
             </td>

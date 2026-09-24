@@ -7,6 +7,7 @@
  */
 import { computed } from 'vue'
 
+import AttachmentView from '@/components/AttachmentView.vue'
 import { avatarHue, initials } from '@/utils/avatar.js'
 import { formatDate } from '@/utils/formatDate.js'
 
@@ -21,9 +22,6 @@ const avatarStyle = computed(() => ({
   background: `hsl(${avatarHue(props.comment.user_name)} 60% 88%)`,
   color: `hsl(${avatarHue(props.comment.user_name)} 45% 30%)`,
 }))
-
-const attachmentUrl = computed(() => props.comment.attachment)
-const isImage = computed(() => props.comment.attachment_type === 'image')
 </script>
 
 <template>
@@ -53,14 +51,15 @@ const isImage = computed(() => props.comment.attachment_type === 'image')
     <!-- Єдине місце з `v-html`: текст уже зібрано санітайзером на сервері (A10). -->
     <div class="comment-text" v-html="comment.text"></div>
 
-    <p v-if="attachmentUrl" class="attachment">
-      <a :href="attachmentUrl" target="_blank" rel="noopener noreferrer">
-        <img v-if="isImage" :src="attachmentUrl" :alt="`Attachment by ${comment.user_name}`" />
-        <span v-else>📄 Attached text file</span>
-      </a>
-    </p>
+    <AttachmentView
+      v-if="comment.attachment"
+      :url="comment.attachment"
+      :type="comment.attachment_type"
+      :author-name="comment.user_name"
+    />
 
-    <div v-if="comment.children?.length" class="replies">
+    <!-- Відповіді з'являються з анімацією: помітно, що в гілці щось змінилося (R24). -->
+    <TransitionGroup v-if="comment.children?.length" name="reply" tag="div" class="replies">
       <CommentItem
         v-for="child in comment.children"
         :key="child.id"
@@ -68,7 +67,7 @@ const isImage = computed(() => props.comment.attachment_type === 'image')
         :depth="depth + 1"
         @reply="$emit('reply', $event)"
       />
-    </div>
+    </TransitionGroup>
   </article>
 </template>
 
@@ -133,15 +132,6 @@ a.author:hover {
   font-family: ui-monospace, monospace;
 }
 
-.attachment {
-  margin: 0.4rem 0 0;
-}
-
-.attachment img {
-  max-width: 100%;
-  border-radius: var(--radius);
-}
-
 /* Вкладеність показуємо відступом. На вузькому екрані відступ менший,
    інакше глибокі відповіді перетворилися б на смужку в один символ. */
 .replies {
@@ -155,5 +145,16 @@ a.author:hover {
     margin-left: 0.5rem;
     padding-left: 0.5rem;
   }
+}
+
+.reply-enter-active {
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.reply-enter-from {
+  opacity: 0;
+  transform: translateY(-6px);
 }
 </style>
