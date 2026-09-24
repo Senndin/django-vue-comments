@@ -5,13 +5,14 @@
  * Перевірки проходять двічі: тут — щоб показати помилку одразу, і на сервері — бо
  * саме його рішення остаточне. Помилки сервера розкладаються під ті самі поля.
  */
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import { ApiError } from '@/api/http.js'
 import { createComment, previewComment } from '@/api/comments.js'
 import CaptchaField from '@/components/CaptchaField.vue'
 import CommentPreview from '@/components/CommentPreview.vue'
 import HtmlToolbar from '@/components/HtmlToolbar.vue'
+import { useAuth } from '@/composables/useAuth.js'
 import {
   validateAttachment,
   validateCaptcha,
@@ -28,12 +29,25 @@ const props = defineProps({
 
 const emit = defineEmits(['created', 'cancel-reply'])
 
+const { user, isAuthenticated } = useAuth()
+
 const form = ref({ user_name: '', email: '', home_page: '', text: '', captcha_value: '' })
 const captchaKey = ref('')
 const attachment = ref(null)
 const errors = ref({})
 const preview = ref('')
 const sending = ref(false)
+
+// Ім'я та e-mail того, хто ввійшов, підставляються з акаунта і не редагуються (A1).
+// Сервер усе одно бере їх із токена, тут це лише узгоджений вигляд форми.
+watch(
+  user,
+  (account) => {
+    form.value.user_name = account?.username ?? ''
+    form.value.email = account?.email ?? ''
+  },
+  { immediate: true },
+)
 
 const textarea = ref(null)
 const captchaField = ref(null)
@@ -135,16 +149,32 @@ async function submit() {
     <div class="row">
       <div class="field">
         <label for="user_name">User name *</label>
-        <input id="user_name" v-model="form.user_name" type="text" autocomplete="nickname" />
+        <input
+          id="user_name"
+          v-model="form.user_name"
+          type="text"
+          autocomplete="nickname"
+          :disabled="isAuthenticated"
+        />
         <p v-if="errors.user_name" class="error">{{ errors.user_name }}</p>
       </div>
 
       <div class="field">
         <label for="email">E-mail *</label>
-        <input id="email" v-model="form.email" type="email" autocomplete="email" />
+        <input
+          id="email"
+          v-model="form.email"
+          type="email"
+          autocomplete="email"
+          :disabled="isAuthenticated"
+        />
         <p v-if="errors.email" class="error">{{ errors.email }}</p>
       </div>
     </div>
+
+    <p v-if="isAuthenticated" class="hint account-hint">
+      Signed in as {{ user.username }} — the name and e-mail come from your account.
+    </p>
 
     <div class="field">
       <label for="home_page">Home page</label>
@@ -236,6 +266,11 @@ label {
   font-weight: 600;
 }
 
+input:disabled {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
 input[type='text'],
 input[type='email'],
 input[type='url'],
@@ -261,6 +296,10 @@ textarea {
   margin: 0.25rem 0 0;
   color: var(--color-error);
   font-size: 0.85rem;
+}
+
+.account-hint {
+  margin-bottom: 0.5rem;
 }
 
 .actions {
