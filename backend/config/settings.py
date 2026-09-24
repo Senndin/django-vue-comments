@@ -138,6 +138,22 @@ CACHES = {
     }
 }
 
+# Черга фонових задач (T7, A17). Брокер — Redis, база 1. Результати задач не зберігаємо:
+# сповіщення або пішло, або ні — питати про нього нема кому.
+CELERY_BROKER_URL = f"{REDIS_URL}/1"
+CELERY_TASK_IGNORE_RESULT = True
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# Пошта. За замовчуванням листи друкуються в консоль — і в розробці, і на сервері,
+# доки не задано SMTP через оточення (A17).
+EMAIL_BACKEND = env("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = env("EMAIL_HOST", "")
+EMAIL_PORT = int(env("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", "True")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "comments@example.com")
+
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     # 25 повідомлень на сторінку (R12).
