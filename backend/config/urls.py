@@ -9,6 +9,7 @@ from django.urls import include, path
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include("comments.urls")),
+    path("api/auth/", include("accounts.urls")),
     # Маршрути django-simple-captcha: картинка за ключем (/captcha/image/<key>/).
     path("captcha/", include("captcha.urls")),
 ]
