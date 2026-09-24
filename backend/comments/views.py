@@ -10,7 +10,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from comments.cache import LIST_CACHE_TIMEOUT, invalidate_list, page_cache_key
+from comments.cache import LIST_CACHE_TIMEOUT, page_cache_key
 from comments.captcha import issue_captcha
 from comments.models import Comment
 from comments.serializers import (
@@ -118,8 +118,6 @@ class CommentListCreateView(generics.ListCreateAPIView):
             ip_address=client_ip(self.request),
             user_agent=self.request.META.get("HTTP_USER_AGENT", "")[:USER_AGENT_MAX_LENGTH],
         )
-        # Тимчасово викликаємо напряму: на етапі 8 це робитиме сигнал після коміту (A19).
-        invalidate_list()
 
 
 class CommentThreadView(generics.RetrieveAPIView):
