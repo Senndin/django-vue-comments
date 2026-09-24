@@ -20,15 +20,35 @@ function render(ordering = '-created_at') {
 
 describe('CommentTable', () => {
   it('renders a row per comment with a plain-text excerpt', () => {
-    const cells = render().findAll('tbody td')
+    // Перша клітинка — кнопка розкриття гілки, далі йдуть дані.
+    const [, name, email, date, message, replies] = render().findAll('tbody td')
 
-    expect(cells[0].text()).toBe('Anonym')
-    expect(cells[1].text()).toBe('anonym@example.com')
-    expect(cells[2].text()).toBe('22.05.22 22:30')
+    expect(name.text()).toBe('Anonym')
+    expect(email.text()).toBe('anonym@example.com')
+    expect(date.text()).toBe('22.05.22 22:30')
     // Розмітка в таблиці не рендериться — лише текст.
-    expect(cells[3].text()).toBe('bold message')
-    expect(cells[3].html()).not.toContain('<strong>')
-    expect(cells[4].text()).toBe('2')
+    expect(message.text()).toBe('bold message')
+    expect(message.html()).not.toContain('<strong>')
+    expect(replies.text()).toBe('2')
+  })
+
+  it('asks the parent to expand the thread', async () => {
+    const wrapper = render()
+
+    await wrapper.find('.toggle').trigger('click')
+
+    expect(wrapper.emitted('toggle')[0]).toEqual([1])
+  })
+
+  it('shows the thread only for the expanded row', () => {
+    const collapsed = mount(CommentTable, { props: { comments, ordering: '-created_at' } })
+    const expanded = mount(CommentTable, {
+      props: { comments, ordering: '-created_at', expandedId: 1 },
+      global: { stubs: { CommentThread: true } },
+    })
+
+    expect(collapsed.find('.thread-row').exists()).toBe(false)
+    expect(expanded.find('.thread-row').exists()).toBe(true)
   })
 
   it('shows a placeholder when there are no comments', () => {
