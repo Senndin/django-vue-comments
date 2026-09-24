@@ -2,9 +2,10 @@
 /** Головна сторінка: таблиця заголовних коментарів (R11, R12, R14). */
 import { onMounted, ref } from 'vue'
 
+import CommentForm from '@/components/CommentForm.vue'
 import CommentTable from '@/components/CommentTable.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
-import { useComments } from '@/composables/useComments.js'
+import { DEFAULT_ORDERING, useComments } from '@/composables/useComments.js'
 
 const { comments, total, page, ordering, loading, error, pageCount, load, setOrdering, setPage } =
   useComments()
@@ -20,6 +21,19 @@ function toggleThread(commentId) {
 
 function startReply(comment) {
   replyTo.value = comment
+  // Форма одна на сторінку і стоїть зверху — після натискання Reply гортаємо до неї.
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+/** Новий коментар: оновлюємо таблицю, щоб побачити його одразу (до етапу 15 — перезапитом). */
+async function onCreated(comment) {
+  replyTo.value = null
+  if (comment.parent === null) {
+    expandedId.value = null
+    page.value = 1
+    ordering.value = DEFAULT_ORDERING
+  }
+  await load()
 }
 
 onMounted(load)
@@ -38,10 +52,7 @@ onMounted(load)
         <button type="button" @click="load">Retry</button>
       </p>
 
-      <p v-if="replyTo" class="message reply-hint">
-        Replying to <strong>{{ replyTo.user_name }}</strong>
-        <button type="button" @click="replyTo = null">Cancel</button>
-      </p>
+      <CommentForm :reply-to="replyTo" @created="onCreated" @cancel-reply="replyTo = null" />
 
       <div :class="{ loading }">
         <CommentTable
@@ -87,10 +98,6 @@ onMounted(load)
 .error {
   background: var(--color-error-surface);
   color: var(--color-error);
-}
-
-.reply-hint {
-  background: var(--color-surface);
 }
 
 /* Поки сторінка вантажиться, таблиця лишається на місці — просто тьмянішає. */
