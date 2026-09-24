@@ -7,12 +7,14 @@
 
 import logging
 
+from channels.exceptions import ChannelFull
 from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from kombu.exceptions import OperationalError
 from redis.exceptions import RedisError
 
+from comments.broadcast import broadcast_comment_created
 from comments.cache import invalidate_list
 from comments.models import Comment
 from comments.tasks import notify_parent_author
@@ -33,13 +35,20 @@ def on_comment_saved(sender: type[Comment], instance: Comment, created: bool, **
 
 def react_to_new_comment(comment_id: int, has_parent: bool) -> None:
     """
-    Дві реакції на новий коментар. Кожна у власному `try`: збій однієї не має скасовувати
+    Три реакції на новий коментар. Кожна у власному `try`: збій однієї не має скасовувати
     другу, і жодна не має ламати вже збережений коментар (`CLAUDE.md` §5.2).
     """
     try:
         invalidate_list()
     except RedisError:
         logger.exception("Failed to invalidate comment list cache for comment %s", comment_id)
+
+    try:
+        broadcast_comment_created(comment_id)
+    except RedisError, ChannelFull:
+        # Клієнти не дізнаються про коментар до перезавантаження сторінки — але сам
+        # коментар збережено, і відповідь користувач отримає (§5.2).
+        logger.exception("Failed to broadcast comment %s", comment_id)
 
     if not has_parent:
         return

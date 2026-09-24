@@ -29,6 +29,9 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "parent",
+            # Корінь гілки потрібен клієнту, щоб покласти коментар із WebSocket
+            # у потрібну гілку, не перезавантажуючи сторінку (A16).
+            "root",
             "user_name",
             "email",
             "home_page",
@@ -81,6 +84,9 @@ class CommentCreateSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "parent",
+            # Корінь гілки потрібен клієнту, щоб покласти коментар із WebSocket
+            # у потрібну гілку, не перезавантажуючи сторінку (A16).
+            "root",
             "user_name",
             "email",
             "home_page",
