@@ -30,6 +30,27 @@ def env_bool(name: str, default: str = "False") -> bool:
 # Безпека. Значення за замовчуванням безпечні: на проді DEBUG треба вмикати свідомо.
 SECRET_KEY = env("DJANGO_SECRET_KEY", "django-insecure-local-development-key")
 DEBUG = env_bool("DJANGO_DEBUG")
+# Адреси, з яких дозволено надсилати форми адмінки: за проксі Django не бачить
+# оригінальну схему й порт, тому їх треба назвати явно (§5.3).
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in env("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost").split(",")
+    if origin.strip()
+]
+# nginx передає справжню схему запиту; без цього Django вважав би HTTPS-запит
+# звичайним HTTP і будував би посилання з http://.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Один вимикач для всього, що має сенс лише за HTTPS (docs/DEPLOY.md). Локально
+# застосунок працює по http, тож за замовчуванням вимкнено — інакше браузер
+# не отримав би жодної куки, а запити ходили б по колу редиректів.
+USE_HTTPS = env_bool("DJANGO_HTTPS")
+SECURE_SSL_REDIRECT = USE_HTTPS
+SESSION_COOKIE_SECURE = USE_HTTPS
+CSRF_COOKIE_SECURE = USE_HTTPS
+# Година для початку: HSTS важко відкотити, тож збільшувати варто після перевірки.
+SECURE_HSTS_SECONDS = 3600 if USE_HTTPS else 0
+
 ALLOWED_HOSTS = [
     host.strip()
     for host in env("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
