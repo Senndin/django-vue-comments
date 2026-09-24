@@ -2,13 +2,17 @@
 /** Головна сторінка: таблиця заголовних коментарів (R11, R12, R14). */
 import { onMounted, ref } from 'vue'
 
+import AuthPanel from '@/components/AuthPanel.vue'
 import CommentForm from '@/components/CommentForm.vue'
 import CommentTable from '@/components/CommentTable.vue'
 import PaginationBar from '@/components/PaginationBar.vue'
-import { DEFAULT_ORDERING, useComments } from '@/composables/useComments.js'
+import { useAuth } from '@/composables/useAuth.js'
+import { DEFAULT_ORDERING, PAGE_SIZE, useComments } from '@/composables/useComments.js'
+import { useWebSocket } from '@/composables/useWebSocket.js'
 
 const { comments, total, page, ordering, loading, error, pageCount, load, setOrdering, setPage } =
   useComments()
+const { restore } = useAuth()
 
 // Розкрита гілка одна: так сторінка лишається оглядовою, а не перетворюється на стрічку.
 const expandedId = ref(null)
@@ -36,14 +40,62 @@ async function onCreated(comment) {
   await load()
 }
 
-onMounted(load)
+/** Останній коментар із WebSocket: розкрита гілка сама забере його, якщо він її (A16). */
+const liveComment = ref(null)
+
+function onLiveEvent(event) {
+  if (event?.type !== 'comment.created') return
+
+  const comment = event.comment
+  liveComment.value = comment
+
+  if (comment.parent === null) {
+    addToTable(comment)
+    return
+  }
+
+  // Відповідь: оновлюємо лічильник у рядку її гілки, якщо він зараз на екрані.
+  const row = comments.value.find((item) => item.id === comment.root)
+  if (row) row.replies_count += 1
+}
+
+function addToTable(comment) {
+  // Свій же коментар ми вже додали після відправки — не дублюємо.
+  if (comments.value.some((item) => item.id === comment.id)) return
+
+  total.value += 1
+  // Вставляємо тільки там, де новий коментар справді має бути зверху: на першій
+  // сторінці зі звичайним сортуванням. В інших випадках його видно після оновлення.
+  if (page.value === 1 && ordering.value === DEFAULT_ORDERING) {
+    comments.value = [{ ...comment, replies_count: 0 }, ...comments.value].slice(0, PAGE_SIZE)
+  }
+}
+
+const { connected } = useWebSocket('/ws/comments/', onLiveEvent)
+
+onMounted(() => {
+  load()
+  restore()
+})
 </script>
 
 <template>
   <div class="page">
     <header class="page-header">
-      <h1>Comments</h1>
-      <p class="subtitle">{{ total }} {{ total === 1 ? 'discussion' : 'discussions' }}</p>
+      <div>
+        <h1>Comments</h1>
+        <p class="subtitle">
+          {{ total }} {{ total === 1 ? 'discussion' : 'discussions' }}
+          <span
+            class="live"
+            :class="{ on: connected }"
+            :title="connected ? 'Live updates are on' : 'Reconnecting…'"
+          >
+            ● {{ connected ? 'live' : 'offline' }}
+          </span>
+        </p>
+      </div>
+      <AuthPanel />
     </header>
 
     <main>
@@ -59,6 +111,7 @@ onMounted(load)
           :comments="comments"
           :ordering="ordering"
           :expanded-id="expandedId"
+          :live-comment="liveComment"
           @update:ordering="setOrdering"
           @toggle="toggleThread"
           @reply="startReply"
@@ -78,7 +131,23 @@ onMounted(load)
 }
 
 .page-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
   margin-bottom: 1.5rem;
+}
+
+/* Індикатор живого з'єднання: видно, чи прийдуть нові коментарі самі. */
+.live {
+  margin-left: 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.live.on {
+  color: #15803d;
 }
 
 .subtitle {

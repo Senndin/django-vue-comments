@@ -4,15 +4,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createComment, previewComment } from '@/api/comments.js'
 import { ApiError } from '@/api/http.js'
 import CommentForm from '@/components/CommentForm.vue'
+import { useAuth } from '@/composables/useAuth.js'
 
 vi.mock('@/api/comments.js', () => ({ createComment: vi.fn(), previewComment: vi.fn() }))
 vi.mock('@/api/captcha.js', () => ({
   fetchCaptcha: vi.fn().mockResolvedValue({ key: 'test-key', image_url: '/captcha/image/x/' }),
 }))
+vi.mock('@/api/auth.js', () => ({
+  register: vi.fn(),
+  obtainTokens: vi.fn().mockResolvedValue({ access: 'a1', refresh: 'r1' }),
+  refreshAccess: vi.fn(),
+  fetchMe: vi.fn().mockResolvedValue({ id: 1, username: 'Denis', email: 'denis@example.com' }),
+}))
 
 beforeEach(() => {
   vi.mocked(createComment).mockReset().mockResolvedValue({ id: 7, parent: null })
   vi.mocked(previewComment).mockReset().mockResolvedValue({ html: '<i>preview</i>' })
+  useAuth().logout()
 })
 
 async function render(props = {}) {
@@ -167,5 +175,40 @@ describe('CommentForm', () => {
 
     expect(previewComment).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('is not closed')
+  })
+})
+
+describe('CommentForm for a signed in visitor', () => {
+  it('fills the name and the e-mail from the account and locks them (A1)', async () => {
+    await useAuth().login({ username: 'Denis', password: 'TestPass123!' })
+    const wrapper = await render()
+
+    expect(wrapper.find('#user_name').element.value).toBe('Denis')
+    expect(wrapper.find('#email').element.value).toBe('denis@example.com')
+    expect(wrapper.find('#user_name').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('#email').attributes('disabled')).toBeDefined()
+  })
+
+  it('sends the account values', async () => {
+    await useAuth().login({ username: 'Denis', password: 'TestPass123!' })
+    const wrapper = await render()
+    await wrapper.find('#text').setValue('from the account')
+    await wrapper.find('#captcha').setValue('ABC123')
+
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(sentFields()).toMatchObject({ user_name: 'Denis', email: 'denis@example.com' })
+  })
+
+  it('clears the fields after logging out', async () => {
+    await useAuth().login({ username: 'Denis', password: 'TestPass123!' })
+    const wrapper = await render()
+
+    useAuth().logout()
+    await flushPromises()
+
+    expect(wrapper.find('#user_name').element.value).toBe('')
+    expect(wrapper.find('#user_name').attributes('disabled')).toBeUndefined()
   })
 })

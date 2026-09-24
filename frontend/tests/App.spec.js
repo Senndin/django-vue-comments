@@ -1,4 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { fetchComments, fetchThread } from '@/api/comments.js'
@@ -13,6 +14,20 @@ vi.mock('@/api/comments.js', () => ({
 // CAPTCHA ходить по мережі вже під час монтування форми — підміняємо й її.
 vi.mock('@/api/captcha.js', () => ({
   fetchCaptcha: vi.fn().mockResolvedValue({ key: 'test-key', image_url: '/captcha/image/x/' }),
+}))
+vi.mock('@/api/auth.js', () => ({
+  register: vi.fn(),
+  obtainTokens: vi.fn(),
+  refreshAccess: vi.fn(),
+  fetchMe: vi.fn(),
+}))
+// З'єднання підміняємо: тест сам викликає обробник, ніби подія прийшла з сервера.
+let liveHandler = null
+vi.mock('@/composables/useWebSocket.js', () => ({
+  useWebSocket: (path, onMessage) => {
+    liveHandler = onMessage
+    return { connected: ref(true), close: vi.fn() }
+  },
 }))
 
 const topComment = {
@@ -101,6 +116,62 @@ describe('App', () => {
     await wrapper.find('.form-header button').trigger('click')
 
     expect(wrapper.find('.comment-form h2').text()).toBe('Add a comment')
+  })
+
+  it('adds a top level comment that arrives over the websocket', async () => {
+    const wrapper = await render()
+
+    liveHandler({
+      type: 'comment.created',
+      comment: { ...topComment, id: 99, user_name: 'FromAnotherTab', parent: null, root: null },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('FromAnotherTab')
+    expect(wrapper.text()).toContain('2 discussions')
+  })
+
+  it('ignores a comment it already shows', async () => {
+    const wrapper = await render()
+
+    liveHandler({ type: 'comment.created', comment: { ...topComment, parent: null, root: null } })
+    await flushPromises()
+
+    expect(wrapper.findAll('.comment-row')).toHaveLength(1)
+  })
+
+  it('counts a reply in the row of its thread', async () => {
+    const wrapper = await render()
+
+    liveHandler({
+      type: 'comment.created',
+      comment: { ...topComment, id: 100, parent: 1, root: 1 },
+    })
+    await flushPromises()
+
+    // У колонці «Replies» стало на одну більше.
+    expect(wrapper.findAll('.comment-row td').at(-1).text()).toBe('2')
+  })
+
+  it('adds a reply to the open thread', async () => {
+    const wrapper = await render()
+    await wrapper.find('.toggle').trigger('click')
+    await flushPromises()
+
+    liveHandler({
+      type: 'comment.created',
+      comment: {
+        ...topComment,
+        id: 101,
+        user_name: 'LiveReply',
+        text: 'live reply',
+        parent: 1,
+        root: 1,
+      },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('LiveReply')
   })
 
   it('shows an error when the list cannot be loaded', async () => {
