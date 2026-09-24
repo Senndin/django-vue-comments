@@ -73,12 +73,16 @@ describe('CommentItem', () => {
     expect(wrapper.emitted('reply')[0][0].id).toBe(2)
   })
 
-  it('shows an image attachment and a link for a text file', () => {
+  it('shows a thumbnail for an image and a file button for a text file', () => {
     const image = render({ attachment: '/media/a.png', attachment_type: 'image' })
     const file = render({ attachment: '/media/a.txt', attachment_type: 'text' })
 
     expect(image.find('.attachment img').attributes('src')).toBe('/media/a.png')
     expect(file.find('.attachment img').exists()).toBe(false)
-    expect(file.find('.attachment a').attributes('href')).toBe('/media/a.txt')
+    expect(file.find('.attachment .file').text()).toContain('text file')
+  })
+
+  it('shows nothing about attachments when there is no file', () => {
+    expect(render().find('.attachment').exists()).toBe(false)
   })
 })
