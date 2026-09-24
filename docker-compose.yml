@@ -45,8 +45,13 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      # Спільні з nginx томи: файли користувачів і зібрана статика Django.
+      - media:/app/media
+      - static:/app/staticfiles
     ports:
-      - "8000:8000"
+      # Тільки для localhost: назовні застосунок віддає nginx на 80 порту.
+      - "127.0.0.1:8000:8000"
 
   worker:
     # Той самий образ, що й у бекенда, але замість веб-сервера — воркер Celery (T7).
@@ -62,5 +67,18 @@ services:
       redis:
         condition: service_healthy
 
+  frontend:
+    # nginx: віддає зібрану SPA і є єдиною точкою входу застосунку (етап 16).
+    build: ./frontend
+    ports:
+      - "80:80"
+    volumes:
+      - media:/app/media:ro
+      - static:/app/staticfiles:ro
+    depends_on:
+      - backend
+
 volumes:
   pgdata:
+  media:
+  static:
