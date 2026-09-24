@@ -4,7 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchComments, fetchThread } from '@/api/comments.js'
 import App from '@/App.vue'
 
-vi.mock('@/api/comments.js', () => ({ fetchComments: vi.fn(), fetchThread: vi.fn() }))
+vi.mock('@/api/comments.js', () => ({
+  fetchComments: vi.fn(),
+  fetchThread: vi.fn(),
+  createComment: vi.fn(),
+  previewComment: vi.fn(),
+}))
+// CAPTCHA ходить по мережі вже під час монтування форми — підміняємо й її.
+vi.mock('@/api/captcha.js', () => ({
+  fetchCaptcha: vi.fn().mockResolvedValue({ key: 'test-key', image_url: '/captcha/image/x/' }),
+}))
 
 const topComment = {
   id: 1,
@@ -26,6 +35,8 @@ const thread = {
 beforeEach(() => {
   vi.mocked(fetchComments).mockReset().mockResolvedValue({ count: 1, results: [topComment] })
   vi.mocked(fetchThread).mockReset().mockResolvedValue(thread)
+  // jsdom не вміє прокручувати вікно — підміняємо, щоб не було шуму в логах.
+  window.scrollTo = vi.fn()
 })
 
 async function render() {
@@ -71,14 +82,25 @@ describe('App', () => {
     expect(fetchComments).toHaveBeenLastCalledWith({ page: 1, ordering: '-user_name' })
   })
 
-  it('remembers which comment the visitor answers', async () => {
+  it('switches the form into reply mode', async () => {
     const wrapper = await render()
     await wrapper.find('.toggle').trigger('click')
     await flushPromises()
 
     await wrapper.findAll('.reply-button')[1].trigger('click')
 
-    expect(wrapper.find('.reply-hint').text()).toContain('Replier')
+    expect(wrapper.find('.comment-form h2').text()).toBe('Reply to Replier')
+  })
+
+  it('leaves reply mode on cancel', async () => {
+    const wrapper = await render()
+    await wrapper.find('.toggle').trigger('click')
+    await flushPromises()
+    await wrapper.findAll('.reply-button')[1].trigger('click')
+
+    await wrapper.find('.form-header button').trigger('click')
+
+    expect(wrapper.find('.comment-form h2').text()).toBe('Add a comment')
   })
 
   it('shows an error when the list cannot be loaded', async () => {
