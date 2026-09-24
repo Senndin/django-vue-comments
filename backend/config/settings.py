@@ -36,6 +36,9 @@ ALLOWED_HOSTS = [
 ]
 
 INSTALLED_APPS = [
+    # `daphne` має стояти першим: він підміняє `runserver` на ASGI-версію.
+    "daphne",
+    "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -135,6 +138,16 @@ CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": f"{REDIS_URL}/0",
+    }
+}
+
+# Канальний шар WebSocket (T6): Redis, база 2. Через нього процеси обмінюються
+# подіями — без нього коментар, створений одним процесом, не дійшов би до клієнтів,
+# підключених до іншого.
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {"hosts": [f"{REDIS_URL}/2"]},
     }
 }
 
