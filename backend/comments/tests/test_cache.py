@@ -34,20 +34,23 @@ def test_repeated_request_does_not_touch_the_database(
 
 
 def test_new_comment_makes_the_list_fresh_again(
-    api_client, captcha_fields, comment_factory
+    api_client, captcha_fields, comment_factory, django_capture_on_commit_callbacks
 ) -> None:
     comment_factory()
     api_client.get(LIST_URL)
 
-    api_client.post(
-        LIST_URL,
-        {
-            "user_name": "Anonym",
-            "email": "anonym@example.com",
-            "text": "brand new",
-            **captcha_fields(),
-        },
-    )
+    # Інвалідацію запускає сигнал після коміту транзакції (етап 8), а тестова транзакція
+    # ніколи не комітиться — тому коллбеки викликаємо явно.
+    with django_capture_on_commit_callbacks(execute=True):
+        api_client.post(
+            LIST_URL,
+            {
+                "user_name": "Anonym",
+                "email": "anonym@example.com",
+                "text": "brand new",
+                **captcha_fields(),
+            },
+        )
 
     assert api_client.get(LIST_URL).json()["count"] == 2
 

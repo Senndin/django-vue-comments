@@ -7,6 +7,14 @@ from rest_framework.test import APIClient
 
 from comments.captcha import issue_captcha
 from comments.models import Comment
+from config.celery import app as celery_app
+
+
+@pytest.fixture(autouse=True)
+def eager_celery():
+    """У тестах задачі виконуються одразу в тому ж процесі, без воркера й брокера."""
+    celery_app.conf.task_always_eager = True
+    celery_app.conf.task_eager_propagates = True
 
 
 @pytest.fixture(autouse=True)
