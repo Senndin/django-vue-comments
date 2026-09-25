@@ -9,7 +9,7 @@ Test assignment for dZENcode (Junior+ level). The full requirements are numbered
 (functional), `T…` (technologies), `D…` (delivery) and `A…` (assumptions); those identifiers
 are used throughout the code and this file.
 
-- **Live demo:** _(add the URL after deployment)_
+- **Live demo:** http://158.101.193.255
 - **Video walkthrough:** _(add the link)_
 
 ---
