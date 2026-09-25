@@ -10,7 +10,7 @@ Test assignment for dZENcode (Junior+ level). The full requirements are numbered
 are used throughout the code and this file.
 
 - **Live demo:** http://158.101.193.255
-- **Video walkthrough:** _(add the link)_
+- **Video walkthrough:** https://drive.google.com/file/d/1JmMrrhBFvM1BwpCrPb4pO6b3AVhw51uw/view?usp=sharing
 
 ---
 
