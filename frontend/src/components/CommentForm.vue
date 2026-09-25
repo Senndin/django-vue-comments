@@ -31,7 +31,18 @@ const emit = defineEmits(['created', 'cancel-reply'])
 
 const { user, isAuthenticated } = useAuth()
 
-const form = ref({ user_name: '', email: '', home_page: '', text: '', captcha_value: '' })
+/** Порожня форма. У того, хто ввійшов, підпис одразу з акаунта (A1). */
+function blankForm() {
+  return {
+    user_name: user.value?.username ?? '',
+    email: user.value?.email ?? '',
+    home_page: '',
+    text: '',
+    captcha_value: '',
+  }
+}
+
+const form = ref(blankForm())
 const captchaKey = ref('')
 const attachment = ref(null)
 const errors = ref({})
@@ -106,7 +117,9 @@ async function showPreview() {
 }
 
 function reset() {
-  form.value = { user_name: '', email: '', home_page: '', text: '', captcha_value: '' }
+  // Саме `blankForm`, а не порожні рядки: інакше після відправки поля підпису
+  // лишалися б і порожніми, і заблокованими — другий коментар надіслати неможливо.
+  form.value = blankForm()
   attachment.value = null
   if (fileInput.value) fileInput.value.value = ''
   preview.value = ''
