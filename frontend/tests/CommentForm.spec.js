@@ -201,6 +201,39 @@ describe('CommentForm for a signed in visitor', () => {
     expect(sentFields()).toMatchObject({ user_name: 'Denis', email: 'denis@example.com' })
   })
 
+  it('keeps the account values in the form after sending', async () => {
+    await useAuth().login({ username: 'Denis', password: 'TestPass123!' })
+    const wrapper = await render()
+    await wrapper.find('#text').setValue('first message')
+    await wrapper.find('#captcha').setValue('ABC123')
+
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    // Поля лишаються заповненими з акаунта: інакше вони порожні й водночас заблоковані.
+    expect(wrapper.find('#user_name').element.value).toBe('Denis')
+    expect(wrapper.find('#email').element.value).toBe('denis@example.com')
+    expect(wrapper.find('#text').element.value).toBe('')
+  })
+
+  it('can send a second comment right away', async () => {
+    await useAuth().login({ username: 'Denis', password: 'TestPass123!' })
+    const wrapper = await render()
+    await wrapper.find('#text').setValue('first message')
+    await wrapper.find('#captcha').setValue('ABC123')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    await wrapper.find('#text').setValue('second message')
+    await wrapper.find('#captcha').setValue('DEF456')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(vi.mocked(createComment)).toHaveBeenCalledTimes(2)
+    const second = Object.fromEntries(vi.mocked(createComment).mock.calls[1][0].entries())
+    expect(second).toMatchObject({ user_name: 'Denis', email: 'denis@example.com' })
+  })
+
   it('clears the fields after logging out', async () => {
     await useAuth().login({ username: 'Denis', password: 'TestPass123!' })
     const wrapper = await render()
