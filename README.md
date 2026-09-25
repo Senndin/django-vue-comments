@@ -213,14 +213,59 @@ threads, the form and the lightbox.
 
 ## Database schema
 
-- `docs/db/schema.mysql.sql` — the application tables in MySQL dialect, ready for
+```mermaid
+erDiagram
+    accounts_user ||--o{ comments_comment : "signed author"
+    comments_comment ||--o{ comments_comment : "parent_id and root_id"
+
+    accounts_user {
+        bigint id PK
+        varchar_50 username UK "latin letters and digits only (R5)"
+        varchar_254 email "required, copied into the form (A1)"
+        varchar_128 password "PBKDF2 hash"
+        bool is_staff
+        bool is_active
+        datetime date_joined
+    }
+
+    comments_comment {
+        bigint id PK
+        bigint parent_id FK "direct parent, NULL for a top level comment (R10)"
+        bigint root_id FK "thread root, NULL for a top level comment (R10)"
+        bigint user_id FK "set when the author was signed in (A1)"
+        varchar_50 user_name "latin letters and digits only (R5)"
+        varchar_254 email "R6"
+        varchar_200 home_page "http and https only (R7)"
+        longtext text "safe HTML built by the sanitizer (A10)"
+        varchar_100 attachment "UUID file name under MEDIA_ROOT (R16)"
+        varchar_5 attachment_type "image or text (A11)"
+        varchar_39 ip_address "X-Real-IP from nginx (R2, A2)"
+        varchar_255 user_agent "R2, A2"
+        datetime created_at "indexed, used for the default order (R11, R14)"
+    }
+```
+
+The tree lives in two self references: `parent_id` drives indentation and ordering inside a
+thread, `root_id` lets a whole thread of any depth be fetched with one indexed query.
+Deleting a top level comment cascades to its thread; deleting an account only detaches the
+comment (`ON DELETE SET NULL`) — the text and the signature stay.
+
+Indexes: `created_at`, `user_name`, `email` for the table sorting (R11, R14), plus the
+automatic indexes of the three foreign keys. A database level `CHECK` keeps `attachment`
+and `attachment_type` filled in together or not at all (A11).
+
+Files:
+
+- `docs/db/schema.mysql.sql` — the same application tables in MySQL dialect, ready for
   **MySQL Workbench** (File → Import → Reverse Engineer MySQL Create Script). The import
   instructions are at the top of the file.
 - `docs/db/schema.mwb`, `docs/db/schema.png` — the model and the ER diagram exported from
   Workbench.
 
 The application itself runs on PostgreSQL (A21); the MySQL file exists so that the designed
-schema can be compared with the implemented one.
+schema can be compared with the implemented one. Django's service tables
+(`django_migrations`, `django_session`, `auth_permission`, `captcha_captchastore`, …) are
+created by framework migrations and are left out of both the diagram and the file.
 
 ---
 
